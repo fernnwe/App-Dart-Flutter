@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert'; // Para codificar y decodificar los productos
+import 'package:url_launcher/url_launcher.dart'; // Paquete necesario para lanzar WhatsApp
 
 void main() {
   runApp(const MyApp());
@@ -152,6 +153,36 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
+  // Generar el mensaje de la factura para WhatsApp
+  String _generateInvoiceMessage() {
+    String invoiceMessage = 'Factura\n\nCliente: $clientName\n\nProductos:\n';
+    for (var product in products) {
+      invoiceMessage += '${product.name} - \$${product.price.toStringAsFixed(2)}\n';
+    }
+    invoiceMessage += '\nTotal: \$${totalFactura.toStringAsFixed(2)}';
+    return invoiceMessage;
+  }
+
+  // Enviar la factura por WhatsApp
+  void _sendInvoiceByWhatsApp() async {
+    if (clientName == null || products.isEmpty) {
+      _showErrorDialog('Asegúrate de tener un cliente y productos antes de enviar la factura.');
+      return;
+    }
+
+    String invoiceMessage = _generateInvoiceMessage();
+
+    String phoneNumber = "+50581088124";  // Número de WhatsApp al que se enviará la factura (deberás reemplazarlo con el número real)
+    Uri url = Uri.parse("https://wa.me/$phoneNumber?text=${Uri.encodeComponent(invoiceMessage)}");
+
+    // Usar canLaunchUrl() en lugar de canLaunch()
+    if (await canLaunchUrl(url)) {
+      await launchUrl(url); // Cambiar launch() por launchUrl()
+    } else {
+      _showErrorDialog('No se pudo abrir WhatsApp.');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -175,6 +206,12 @@ class _MyHomePageState extends State<MyHomePage> {
               _buildProductList(),
               const SizedBox(height: 20),
               _buildInvoiceSummary(),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: _sendInvoiceByWhatsApp,
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.yellow),
+                child: const Text('Enviar Factura por WhatsApp'),
+              ),
             ],
           ),
         ),
